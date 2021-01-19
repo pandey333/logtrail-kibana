@@ -1,0 +1,114 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kibana-config
+  namespace: staging
+data:
+  kibana.yml: |
+    ---
+    server.name: kibana
+    server.host: "0"
+    elasticsearch.hosts: http://elasticsearch.elk.svc.cluster.local:9200
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: staging-kibana
+  namespace: staging
+  labels:
+    component: elasticsearch
+    app: kibana
+spec:
+  selector:
+    component: elasticsearch
+    app: kibana
+  ports:
+  - name: http
+    port: 5601
+    targetPort: http
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logtrail-config
+  namespace: staging
+data:
+  logtrail.json: |
+    {
+        "version" : 1,
+        "index_patterns" : [
+        {      
+            "es": {
+                "default_index": "logstash-*"
+            },
+            "tail_interval_in_seconds": 10,
+            "es_index_time_offset_in_seconds": 0,
+            "display_timezone": "local",
+            "display_timestamp_format": "MMM DD HH:mm:ss",
+            "max_buckets": 500,
+            "default_time_range_in_days" : 0,
+            "max_hosts": 100,
+            "max_events_to_keep_in_viewer": 5000,
+            "fields" : {
+                "mapping" : {
+                    "timestamp": "@timestamp",
+                    "display_timestamp": "@timestamp",
+                    "hostname": "kubernetes.pod.name",
+                    "program": "kubernetes.container.name",
+                    "message": "log"
+                },
+                "message_format": "{{{log}}}"
+            },
+            "color_mapping" : {
+            }
+        }]
+    } 
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: staging-kibana
+  namespace: staging
+  labels:
+    component: elasticsearch
+    app: kibana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: elasticsearch
+      app: kibana
+  template:
+    metadata:
+      labels:
+        component: elasticsearch
+        app: kibana
+    spec:
+      containers:
+      - name: kibana
+        image: kibana-log:latest
+        ports:
+        - containerPort: 5601
+          name: http
+        readinessProbe:
+          httpGet:
+            path: /api/status
+            port: http
+          initialDelaySeconds: 60
+          timeoutSeconds: 20
+        volumeMounts:
+          - name: config
+            mountPath: /usr/share/kibana/config
+            readOnly: true
+          - name: logtrail-config
+            mountPath: /config 
+            readOnly: true 
+      volumes:
+        - name: config
+          configMap:
+            name: kibana-config
+        - name: logtrail-config
+          configMap:
+            name: logtrail-config    
+      
