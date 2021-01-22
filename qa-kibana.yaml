@@ -13,7 +13,7 @@ data:
 apiVersion: v1
 kind: Service
 metadata:
-  name: qa-kibana
+  name: kibana
   namespace: qa
   labels:
     component: elasticsearch
@@ -68,7 +68,7 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: qa-kibana
+  name: kibana
   namespace: qa
   labels:
     component: elasticsearch
