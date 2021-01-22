@@ -27,7 +27,7 @@ data:
                 "display_timestamp" : "@timestamp",
                 "hostname" : "kubernetes.labels.app",
                 "program": "kubernetes.container_name",
-                "program": "kubernetes.namespace_name",
+                "program":"kubernetes.namespace_name",
                 "message": "log"
             },
             "message_format": "({{{kubernetes.pod_name}}}) | ({{{kubernetes.namespace_name}}}) | {{{log}}}"
